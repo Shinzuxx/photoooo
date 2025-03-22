@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .container {
+        text-align: center;
+      }
+      video {
+        border: 2px solid #333;
+        width: 640px;
+        height: 480px;
+      }
+      .controls {
+        margin-top: 10px;
+      }
+      .controls input {
+        padding: 5px;
+        width: 100px;
+      }
+      .controls button {
+        padding: 10px 20px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      #photos {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      }
+      .photo {
+        margin: 10px;
+        position: relative;
+      }
+      .photo img {
+        width: 320px;
+        height: 240px;
+        border: 2px solid #333;
+      }
+      .photo button {
+        position: absolute;
+        bottom: 5px;
+        left: 35%;
+        padding: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Photo Booth</h1>
+      <video id="video" autoplay></video>
+      <div class="controls">
+        <input type="number" id="timer" min="0" placeholder="Timer (Sec)" />
+        <button id="capture-one-btn">Capture 1 Pic</button>
+        <button id="capture-four-btn">Capture 4 Pics</button>
+      </div>
+      <div id="photos"></div>
+    </div>
+    <script>
+      var video = document.getElementById("video");
+      var captureOneBtn = document.getElementById("capture-one-btn");
+      var captureFourBtn = document.getElementById("capture-four-btn");
+      var photosContainer = document.getElementById("photos");
+      var timerInput = document.getElementById("timer");
+
+      navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+        video.srcObject = stream;
+      });
+
+      captureOneBtn.addEventListener("click", () => {
+        capturePhoto();
+      });
+
+      captureFourBtn.addEventListener("click", () => {
+        captureDifferentPhotos();
+      });
+
+      function capturePhoto() {
+        var canvas = document.createElement("canvas");
+        var context = canvas.getContext("2d");
+        canvas.width = 640;
+        canvas.height = 480;
+        context.drawImage(video, 0, 0, 640, 480);
+
+        var photoDiv = document.createElement("div");
+        photoDiv.classList.add("photo");
+
+        var img = document.createElement("img");
+        img.src = canvas.toDataURL("image/png");
+        photoDiv.appendChild(img);
+
+        var downloadBtn = document.createElement("button");
+        downloadBtn.textContent = "Download";
+        downloadBtn.addEventListener("click", () => {
+          var a = document.createElement("a");
+          a.href = img.src;
+          a.download = "photo.png";
+          a.click();
+        });
+        
+        photoDiv.appendChild(downloadBtn);
+        photosContainer.appendChild(photoDiv);
+      }
+
+      function captureDifferentPhotos() {
+        var frameCanvas = document.createElement("canvas");
+        var frameContext = frameCanvas.getContext("2d");
+        frameCanvas.width = 640;
+        frameCanvas.height = 480;
+
+        var photoDiv = document.createElement("div");
+        photoDiv.classList.add("photo");
+
+        let snapshots = [];
+        function takeSnapshot(index) {
+          let canvas = document.createElement("canvas");
+          let context = canvas.getContext("2d");
+          canvas.width = 320;
+          canvas.height = 240;
+          context.drawImage(video, 0, 0, 320, 240);
+          snapshots[index] = canvas;
+          
+          if (snapshots.length === 4) {
+            for (let i = 0; i < 4; i++) {
+              let x = (i % 2) * 320;
+              let y = Math.floor(i / 2) * 240;
+              frameContext.drawImage(snapshots[i], x, y);
+            }
+            
+            var img = document.createElement("img");
+            img.src = frameCanvas.toDataURL("image/png");
+            photoDiv.appendChild(img);
+            
+            var downloadBtn = document.createElement("button");
+            downloadBtn.textContent = "Download";
+            downloadBtn.addEventListener("click", () => {
+              var a = document.createElement("a");
+              a.href = img.src;
+              a.download = "photo-frame.png";
+              a.click();
+            });
+            
+            photoDiv.appendChild(downloadBtn);
+            photosContainer.appendChild(photoDiv);
+          }
+        }
+
+        for (let i = 0; i < 4; i++) {
+          setTimeout(() => takeSnapshot(i), i * 3000);
+        }
+      }
+    </script>
+  </body>
+</html>
